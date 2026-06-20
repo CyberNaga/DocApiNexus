@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const pool = require("./db/database");
 require("dotenv").config();
 
 const app = express();
@@ -17,7 +18,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 
 // Temporary in-memory user store.
 // Later this will be replaced with database storage.
-const users = [];
+//const users = [];
 
 app.get("/", (req, res) => {
   res.json({
@@ -47,9 +48,12 @@ app.post("/auth/register", async (req, res) => {
       });
     }
 
-    const existingUser = users.find((user) => user.username === username);
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE username = $1",
+      [username]
+    );
 
-    if (existingUser) {
+    if (existingUser.rows.length > 0) {
       return res.status(409).json({
         error: "User already exists"
       });
@@ -57,24 +61,18 @@ app.post("/auth/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = {
-      id: users.length + 1,
-      username,
-      password: hashedPassword,
-      role: role || "USER"
-    };
-
-    users.push(newUser);
+    const newUser = await pool.query(
+      "INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role, created_at",
+      [username, hashedPassword, role || "USER"]
+    );
 
     res.status(201).json({
       message: "User registered successfully",
-      user: {
-        id: newUser.id,
-        username: newUser.username,
-        role: newUser.role
-      }
+      user: newUser.rows[0]
     });
   } catch (error) {
+    console.error("Registration error:", error.message);
+
     res.status(500).json({
       error: "Registration failed"
     });
@@ -91,15 +89,23 @@ app.post("/auth/login", async (req, res) => {
       });
     }
 
-    const user = users.find((user) => user.username === username);
+    const result = await pool.query(
+      "SELECT id, username, password_hash, role FROM users WHERE username = $1",
+      [username]
+    );
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(401).json({
         error: "Invalid username or password"
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const user = result.rows[0];
+
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
 
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -126,6 +132,8 @@ app.post("/auth/login", async (req, res) => {
       expiresIn: JWT_EXPIRES_IN
     });
   } catch (error) {
+    console.error("Login error:", error.message);
+
     res.status(500).json({
       error: "Login failed"
     });
