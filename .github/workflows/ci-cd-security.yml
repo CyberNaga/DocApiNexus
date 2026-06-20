@@ -1,0 +1,96 @@
+name: DocApiNexus CI/CD Security Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  node-security-checks:
+    name: Node.js Services Security Checks
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - backend/rest-api
+          - backend/graphql-api
+          - backend/microservices/auth-service
+          - web-app
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.service }}
+        run: npm install
+
+      - name: Run tests
+        working-directory: ${{ matrix.service }}
+        run: npm test
+
+      - name: Run npm audit
+        working-directory: ${{ matrix.service }}
+        run: npm audit --audit-level=moderate
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+
+  docker-build-scan:
+    name: Docker Build and Image Scan
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - name: rest-api
+            path: backend/rest-api
+            image: docapinexus-rest-api
+
+          - name: graphql-api
+            path: backend/graphql-api
+            image: docapinexus-graphql-api
+
+          - name: auth-service
+            path: backend/microservices/auth-service
+            image: docapinexus-auth-service
+
+          - name: web-app
+            path: web-app
+            image: docapinexus-web-app
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t ${{ matrix.image }}:ci ./${{ matrix.path }}
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}:ci
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
