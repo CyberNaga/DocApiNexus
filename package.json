@@ -1,0 +1,32 @@
+{
+  "name": "docapinexus",
+  "version": "1.0.0",
+  "description": "Authentication Serivice",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  
+  "scripts": {
+  "start:rest": "cd backend/rest-api && npm run dev",
+  "start:graphql": "cd backend/graphql-api && npm run dev",
+  "start:auth": "cd backend/microservices/auth-service && npm run dev",
+  "start:web": "cd web-app && npm run dev",
+  "start:all": "concurrently \"npm run start:rest\" \"npm run start:graphql\" \"npm run start:auth\" \"npm run start:web\""
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CyberNaga/DocApiNexus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/CyberNaga/DocApiNexus/issues"
+  },
+  "homepage": "https://github.com/CyberNaga/DocApiNexus#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}

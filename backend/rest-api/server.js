@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
+const pool = require("./db/database");
 
 const app = express();
 
@@ -53,19 +54,25 @@ function authenticateToken(req, res, next) {
   });
 }
 
-app.get("/api/users", authenticateToken, (req, res) => {
-  res.json([
-    {
-      id: 1,
-      name: "Dheena",
-      role: "Security Engineer"
-    },
-    {
-      id: 2,
-      name: "DocApiNexus",
-      role: "API Project"
-    }
-  ]);
+app.get("/api/users", authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, username, role, created_at FROM users ORDER BY id ASC"
+    );
+
+    res.json({
+      service: "REST API",
+      source: "PostgreSQL database",
+      requestedBy: req.user.username,
+      users: result.rows
+    });
+  } catch (error) {
+    console.error("REST users fetch error:", error.message);
+
+    res.status(500).json({
+      error: "Failed to fetch users from database"
+    });
+  }
 });
 
 app.listen(PORT, () => {
