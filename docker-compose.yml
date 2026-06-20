@@ -1,0 +1,56 @@
+services:
+  auth-service:
+    build:
+      context: ./backend/microservices/auth-service
+    container_name: docapinexus-auth-service
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      JWT_SECRET: docapinexus_local_secret_change_later
+      JWT_EXPIRES_IN: 1h
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: docapinexusdb
+      DB_USER: docapiuser
+      DB_PASSWORD: DocApi@123
+
+  rest-api:
+    build:
+      context: ./backend/rest-api
+    container_name: docapinexus-rest-api
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      JWT_SECRET: docapinexus_local_secret_change_later
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: docapinexusdb
+      DB_USER: docapiuser
+      DB_PASSWORD: DocApi@123
+    depends_on:
+      - auth-service
+
+  graphql-api:
+    build:
+      context: ./backend/graphql-api
+    container_name: docapinexus-graphql-api
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      JWT_SECRET: docapinexus_local_secret_change_later
+    depends_on:
+      - auth-service
+
+  web-app:
+    build:
+      context: ./web-app
+    container_name: docapinexus-web-app
+    ports:
+      - "5173:5173"
+    depends_on:
+      - auth-service
+      - rest-api
+      - graphql-api
