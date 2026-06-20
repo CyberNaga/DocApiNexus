@@ -1,0 +1,3 @@
+Authentication Serivice
+
+In my Auth Service, during registration the password travels from client to server over HTTPS. The server never stores the plain password. It uses bcrypt to generate a salted one-way hash and stores only that hash. During login, the submitted password is compared with the stored bcrypt hash using bcrypt.compare. If the comparison succeeds, the service generates a JWT containing user claims like subject, username, and role. The client then sends this JWT in the Authorization Bearer header to access protected REST, GraphQL, or microservice endpoints.
