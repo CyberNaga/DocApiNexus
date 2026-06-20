@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graphql-api
+  namespace: docapinexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: graphql-api
+  template:
+    metadata:
+      labels:
+        app: graphql-api
+    spec:
+      containers:
+        - name: graphql-api
+          image: docapinexus-graphql-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 4000
+          env:
+            - name: PORT
+              value: "4000"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: docapinexus-secrets
+                  key: JWT_SECRET
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graphql-api
+  namespace: docapinexus
+spec:
+  selector:
+    app: graphql-api
+  ports:
+    - port: 4000
+      targetPort: 4000

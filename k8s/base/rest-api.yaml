@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rest-api
+  namespace: docapinexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rest-api
+  template:
+    metadata:
+      labels:
+        app: rest-api
+    spec:
+      containers:
+        - name: rest-api
+          image: docapinexus-rest-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: docapinexus-secrets
+                  key: JWT_SECRET
+            - name: DB_HOST
+              value: postgres-service
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: docapinexus-secrets
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: docapinexus-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: docapinexus-secrets
+                  key: DB_PASSWORD
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rest-api
+  namespace: docapinexus
+spec:
+  selector:
+    app: rest-api
+  ports:
+    - port: 3000
+      targetPort: 3000
