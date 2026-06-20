@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const jwt = require("jsonwebtoken");
 const { graphqlHTTP } = require("express-graphql");
 const {
   GraphQLObjectType,
@@ -23,6 +24,7 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const users = [
   {
@@ -69,7 +71,17 @@ const RootQuery = new GraphQLObjectType({
       resolve(parent, args) {
         return users.find((user) => user.id === args.id);
       }
+    },
+    profile: {
+  type: GraphQLString,
+  resolve(parent, args, context) {
+    if (!context.user) {
+      throw new Error("Unauthorized. Valid JWT token required.");
     }
+
+    return `Welcome ${context.user.username}. Your role is ${context.user.role}`;
+  }
+}
   }
 });
 
@@ -77,14 +89,31 @@ const schema = new GraphQLSchema({
   query: RootQuery
 });
 
-app.get("/", (req, res) => {
-  res.json({
-    project: "DocApiNexus",
-    service: "GraphQL API",
-    status: "running",
-    graphqlEndpoint: "/graphql"
-  });
-});
+function getUserFromToken(req) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    return null;
+  }
+}
+
+app.use(
+  "/graphql",
+  graphqlHTTP((req) => ({
+    schema,
+    graphiql: true,
+    context: {
+      user: getUserFromToken(req)
+    }
+  }))
+);
 
 app.get("/health", (req, res) => {
   res.json({
