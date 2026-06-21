@@ -18,9 +18,11 @@ import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
 
-    private val authBaseUrl = "http://10.0.2.2:5000"
-    private val restBaseUrl = "http://10.0.2.2:3000"
-    private val graphqlUrl = "http://10.0.2.2:4000/graphql"
+    private val gatewayBaseUrl = "http://10.0.2.2:8080"
+
+    private val authBaseUrl = gatewayBaseUrl
+    private val restBaseUrl = gatewayBaseUrl
+    private val graphqlUrl = "$gatewayBaseUrl/graphql"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

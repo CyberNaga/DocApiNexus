@@ -10,9 +10,11 @@ function App() {
   const [restData, setRestData] = useState(null);
   const [graphqlData, setGraphqlData] = useState(null);
 
-  const authBaseUrl = "http://localhost:5000";
-  const restBaseUrl = "http://localhost:3000";
-  const graphqlUrl = "http://localhost:4000/graphql";
+const gatewayBaseUrl = "http://localhost:8080";
+
+const authBaseUrl = gatewayBaseUrl;
+const restBaseUrl = gatewayBaseUrl;
+const graphqlUrl = `${gatewayBaseUrl}/graphql`;
 
   async function registerUser() {
     try {
