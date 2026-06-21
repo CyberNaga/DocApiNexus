@@ -5,11 +5,20 @@ const morgan = require("morgan");
 const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
 const crypto = require("crypto");
+const client = require("prom-client");
 require("dotenv").config();
 
 const app = express();
 
 const PORT = process.env.PORT || 6000;
+client.collectDefaultMetrics();
+
+const httpRequestDuration = new client.Histogram({
+  name: "audit_service_http_request_duration_seconds",
+  help: "HTTP request duration in seconds for Audit Service",
+  labelNames: ["method", "route", "status_code"],
+  buckets: [0.05, 0.1, 0.3, 0.5, 1, 2, 5]
+});
 const JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(helmet());

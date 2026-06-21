@@ -2,10 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const crypto = require("crypto");
-require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const pool = require("./db/database");
 const client = require("prom-client");
+require("dotenv").config();
 
 // Create a new counter metric
 const requestCounter = new client.Counter({
@@ -52,6 +52,14 @@ app.use((req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
+client.collectDefaultMetrics();
+
+const httpRequestDuration = new client.Histogram({
+  name: "rest_api_http_request_duration_seconds",
+  help: "HTTP request duration in seconds for REST API",
+  labelNames: ["method", "route", "status_code"],
+  buckets: [0.05, 0.1, 0.3, 0.5, 1, 2, 5]
+});
 const JWT_SECRET = process.env.JWT_SECRET;
 
 app.get("/", (req, res) => {

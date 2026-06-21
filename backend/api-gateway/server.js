@@ -39,15 +39,18 @@ app.use(cors());
 app.use((req, res, next) => {
   const requestId = req.headers["x-request-id"] || crypto.randomUUID();
   const startTime = Date.now();
-  httpRequestDuration
-  .labels(req.method, req.route?.path || req.originalUrl, String(res.statusCode))
-  .observe(durationMs / 1000);
 
   req.requestId = requestId;
   res.setHeader("x-request-id", requestId);
 
   res.on("finish", () => {
     const durationMs = Date.now() - startTime;
+
+    if (typeof httpRequestDuration !== "undefined") {
+      httpRequestDuration
+        .labels(req.method, req.route?.path || req.originalUrl, String(res.statusCode))
+        .observe(durationMs / 1000);
+    }
 
     console.log(
       JSON.stringify({
