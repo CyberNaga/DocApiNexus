@@ -165,16 +165,16 @@ app.use(
   })
 );
 
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
+});
+
 app.use((req, res) => {
   res.status(404).json({
     error: "Route not found in API Gateway",
     path: req.originalUrl
   });
-});
-
-app.get("/metrics", async (req, res) => {
-  res.set("Content-Type", client.register.contentType);
-  res.end(await client.register.metrics());
 });
 
 app.listen(PORT, () => {
