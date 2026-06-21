@@ -26,6 +26,9 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const durationMs = Date.now() - startTime;
+    httpRequestDuration
+    .labels(req.method, req.route?.path || req.originalUrl, String(res.statusCode))
+    .observe(durationMs / 1000);
 
     console.log(
       JSON.stringify({
@@ -155,6 +158,11 @@ app.get("/audit/logs", verifyToken, async (req, res) => {
       error: "Failed to fetch audit logs"
     });
   }
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 initDb()

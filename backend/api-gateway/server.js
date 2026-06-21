@@ -4,12 +4,22 @@ const cors = require("cors");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const crypto = require("crypto");
+const client = require("prom-client");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 require("dotenv").config();
 
 const app = express();
 
 const PORT = process.env.PORT || 8080;
+
+client.collectDefaultMetrics();
+
+const httpRequestDuration = new client.Histogram({
+  name: "api_gateway_http_request_duration_seconds",
+  help: "HTTP request duration in seconds for API Gateway",
+  labelNames: ["method", "route", "status_code"],
+  buckets: [0.05, 0.1, 0.3, 0.5, 1, 2, 5]
+});
 
 const AUTH_SERVICE_URL =
   process.env.AUTH_SERVICE_URL || "http://localhost:5000";
@@ -29,6 +39,9 @@ app.use(cors());
 app.use((req, res, next) => {
   const requestId = req.headers["x-request-id"] || crypto.randomUUID();
   const startTime = Date.now();
+  httpRequestDuration
+  .labels(req.method, req.route?.path || req.originalUrl, String(res.statusCode))
+  .observe(durationMs / 1000);
 
   req.requestId = requestId;
   res.setHeader("x-request-id", requestId);
@@ -154,6 +167,11 @@ app.use((req, res) => {
     error: "Route not found in API Gateway",
     path: req.originalUrl
   });
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 app.listen(PORT, () => {

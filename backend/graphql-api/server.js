@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const client = require("prom-client");
 const { graphqlHTTP } = require("express-graphql");
 const {
   GraphQLObjectType,
@@ -33,6 +34,9 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const durationMs = Date.now() - startTime;
+    httpRequestDuration
+    .labels(req.method, req.route?.path || req.originalUrl, String(res.statusCode))
+    .observe(durationMs / 1000);
 
     console.log(
       JSON.stringify({
@@ -132,6 +136,11 @@ function getUserFromToken(req) {
     return null;
   }
 }
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
+});
 
 app.use(
   "/graphql",

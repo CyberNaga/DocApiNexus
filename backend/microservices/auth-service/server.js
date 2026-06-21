@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("./db/database");
 const crypto = require("crypto");
+const client = require("prom-client");
 require("dotenv").config();
 
 const app = express();
@@ -22,6 +23,9 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const durationMs = Date.now() - startTime;
+    httpRequestDuration
+     .labels(req.method, req.route?.path || req.originalUrl, String(res.statusCode))
+     .observe(durationMs / 1000);
 
     console.log(
       JSON.stringify({
@@ -44,6 +48,15 @@ app.use((req, res, next) => {
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+
+client.collectDefaultMetrics();
+
+const httpRequestDuration = new client.Histogram({
+  name: "auth_service_http_request_duration_seconds",
+  help: "HTTP request duration in seconds for Auth Service",
+  labelNames: ["method", "route", "status_code"],
+  buckets: [0.05, 0.1, 0.3, 0.5, 1, 2, 5]
+});
 
 // Temporary in-memory user store.
 // Later this will be replaced with database storage.
@@ -196,6 +209,11 @@ app.get("/auth/profile", authenticateToken, (req, res) => {
     message: "Protected profile accessed successfully",
     user: req.user
   });
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 app.listen(PORT, () => {

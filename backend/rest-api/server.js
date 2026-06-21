@@ -5,6 +5,14 @@ const crypto = require("crypto");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const pool = require("./db/database");
+const client = require("prom-client");
+
+// Create a new counter metric
+const requestCounter = new client.Counter({
+  name: "rest_api_requests_total",
+  help: "Total number of REST API requests",
+  labelNames: ["method", "path", "statusCode"]
+});
 
 const app = express();
 
@@ -21,6 +29,9 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const durationMs = Date.now() - startTime;
+    httpRequestDuration
+    .labels(req.method, req.route?.path || req.originalUrl, String(res.statusCode))
+    .observe(durationMs / 1000);
 
     console.log(
       JSON.stringify({
@@ -102,6 +113,11 @@ app.get("/api/users", authenticateToken, async (req, res) => {
       error: "Failed to fetch users from database"
     });
   }
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 app.listen(PORT, () => {
