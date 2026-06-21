@@ -3,6 +3,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
+const crypto = require("crypto");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 require("dotenv").config();
 
@@ -24,7 +25,34 @@ const AUDIT_SERVICE_URL =
 
 app.use(helmet());
 app.use(cors());
-app.use(morgan("dev"));
+
+app.use((req, res, next) => {
+  const requestId = req.headers["x-request-id"] || crypto.randomUUID();
+  const startTime = Date.now();
+
+  req.requestId = requestId;
+  res.setHeader("x-request-id", requestId);
+
+  res.on("finish", () => {
+    const durationMs = Date.now() - startTime;
+
+    console.log(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        service: "api-gateway",
+        requestId,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"]
+      })
+    );
+  });
+
+  next();
+});
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -62,7 +90,14 @@ app.use(
   createProxyMiddleware({
     target: AUTH_SERVICE_URL,
     changeOrigin: true,
-    pathRewrite: (path, req) => req.originalUrl
+    pathRewrite: (path, req) => req.originalUrl,
+    on: {
+  proxyReq: (proxyReq, req) => {
+    if (req.requestId) {
+      proxyReq.setHeader("x-request-id", req.requestId);
+    }
+  }
+}
   })
 );
 
@@ -71,7 +106,14 @@ app.use(
   createProxyMiddleware({
     target: REST_API_URL,
     changeOrigin: true,
-    pathRewrite: (path, req) => req.originalUrl
+    pathRewrite: (path, req) => req.originalUrl,
+    on: {
+  proxyReq: (proxyReq, req) => {
+    if (req.requestId) {
+      proxyReq.setHeader("x-request-id", req.requestId);
+    }
+  }
+}
   })
 );
 
@@ -80,7 +122,14 @@ app.use(
   createProxyMiddleware({
     target: GRAPHQL_API_URL,
     changeOrigin: true,
-    pathRewrite: (path, req) => req.originalUrl
+    pathRewrite: (path, req) => req.originalUrl,
+    on: {
+  proxyReq: (proxyReq, req) => {
+    if (req.requestId) {
+      proxyReq.setHeader("x-request-id", req.requestId);
+    }
+  }
+}
   })
 );
     
@@ -89,7 +138,14 @@ app.use(
   createProxyMiddleware({
     target: AUDIT_SERVICE_URL,
     changeOrigin: true,
-    pathRewrite: (path, req) => req.originalUrl
+    pathRewrite: (path, req) => req.originalUrl,
+    on: {
+  proxyReq: (proxyReq, req) => {
+    if (req.requestId) {
+      proxyReq.setHeader("x-request-id", req.requestId);
+    }
+  }
+}
   })
 );
 
