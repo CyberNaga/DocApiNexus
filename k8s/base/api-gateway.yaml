@@ -76,7 +76,8 @@ spec:
               value: "http://rest-api:3000"
             - name: GRAPHQL_API_URL
               value: "http://graphql-api:4000"
-
+            - name: AUDIT_SERVICE_URL
+              value: "http://audit-service:6000"
 ---
 apiVersion: v1
 kind: Service

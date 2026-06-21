@@ -19,6 +19,9 @@ const REST_API_URL =
 const GRAPHQL_API_URL =
   process.env.GRAPHQL_API_URL || "http://localhost:4000";
 
+const AUDIT_SERVICE_URL =
+  process.env.AUDIT_SERVICE_URL || "http://localhost:6000";
+
 app.use(helmet());
 app.use(cors());
 app.use(morgan("dev"));
@@ -40,15 +43,17 @@ app.get("/health", (req, res) => {
     service: "DocApiNexus API Gateway",
     status: "healthy",
     routes: {
-      auth: "/auth",
-      rest: "/api",
-      graphql: "/graphql"
-    },
-    upstreams: {
-      authService: AUTH_SERVICE_URL,
-      restApi: REST_API_URL,
-      graphqlApi: GRAPHQL_API_URL
-    }
+            auth: "/auth",
+            rest: "/api",
+            graphql: "/graphql",
+            audit: "/audit"
+            },
+            upstreams: {
+            authService: AUTH_SERVICE_URL,
+            restApi: REST_API_URL,
+            graphqlApi: GRAPHQL_API_URL,
+            auditService: AUDIT_SERVICE_URL
+            }
   });
 });
 
@@ -74,6 +79,15 @@ app.use(
   "/graphql",
   createProxyMiddleware({
     target: GRAPHQL_API_URL,
+    changeOrigin: true,
+    pathRewrite: (path, req) => req.originalUrl
+  })
+);
+    
+app.use(
+  "/audit",
+  createProxyMiddleware({
+    target: AUDIT_SERVICE_URL,
     changeOrigin: true,
     pathRewrite: (path, req) => req.originalUrl
   })

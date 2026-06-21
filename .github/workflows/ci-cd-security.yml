@@ -25,6 +25,7 @@ jobs:
           - backend/microservices/auth-service
           - web-app
           - backend/api-gateway
+          - backend/microservices/audit-service
 
     steps:
       - name: Checkout source code
@@ -84,6 +85,10 @@ jobs:
           - name: api-gateway
             path: backend/api-gateway
             image: docapinexus-api-gateway
+
+          - name: audit-service
+            path: backend/microservices/audit-service
+            image: docapinexus-audit-service
   
     steps:
       - name: Checkout source code
