@@ -66,6 +66,7 @@ services:
       AUTH_SERVICE_URL: http://auth-service:5000
       REST_API_URL: http://rest-api:3000
       GRAPHQL_API_URL: http://graphql-api:4000
+      AUDIT_SERVICE_URL: http://audit-service:6000
     depends_on:
       - auth-service
       - rest-api
@@ -85,3 +86,16 @@ services:
       DB_NAME: docapinexusdb
       DB_USER: docapiuser
       DB_PASSWORD: DocApi@123
+
+  db-migration:
+    build:
+      context: .
+      dockerfile: database/Dockerfile
+    container_name: docapinexus-db-migration
+    environment:
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: docapinexusdb
+      DB_USER: docapiuser
+      DB_PASSWORD: DocApi@123
+    restart: "no"
