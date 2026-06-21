@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
+const crypto = require("crypto");
 require("dotenv").config();
 
 const app = express();
@@ -15,6 +16,34 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+
+app.use((req, res, next) => {
+  const requestId = req.headers["x-request-id"] || crypto.randomUUID();
+  const startTime = Date.now();
+
+  req.requestId = requestId;
+  res.setHeader("x-request-id", requestId);
+
+  res.on("finish", () => {
+    const durationMs = Date.now() - startTime;
+
+    console.log(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        service: "audit-service",
+        requestId,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"]
+      })
+    );
+  });
+
+  next();
+});
 
 const pool = new Pool({
   host: process.env.DB_HOST,
