@@ -1,0 +1,102 @@
+{
+  "id": null,
+  "uid": "docapinexus-overview",
+  "title": "DocApiNexus Observability Overview",
+  "tags": ["docapinexus", "api", "microservices"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "API Gateway Request Rate",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(api_gateway_http_request_duration_seconds_count[5m])",
+          "legendFormat": "API Gateway RPS"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Auth Service Request Rate",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(auth_service_http_request_duration_seconds_count[5m])",
+          "legendFormat": "Auth Service RPS"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "REST API Request Rate",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(rest_api_http_request_duration_seconds_count[5m])",
+          "legendFormat": "REST API RPS"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "GraphQL API Request Rate",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(graphql_api_http_request_duration_seconds_count[5m])",
+          "legendFormat": "GraphQL API RPS"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Audit Service Request Rate",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(audit_service_http_request_duration_seconds_count[5m])",
+          "legendFormat": "Audit Service RPS"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "API Gateway 95th Percentile Latency",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(api_gateway_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 latency"
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      }
+    }
+  ]
+}

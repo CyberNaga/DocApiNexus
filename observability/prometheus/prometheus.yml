@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+  - job_name: docapinexus-api-gateway
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - api-gateway:8080
+
+  - job_name: docapinexus-auth-service
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - auth-service:5000
+
+  - job_name: docapinexus-rest-api
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - rest-api:3000
+
+  - job_name: docapinexus-graphql-api
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - graphql-api:4000
+
+  - job_name: docapinexus-audit-service
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - audit-service:6000

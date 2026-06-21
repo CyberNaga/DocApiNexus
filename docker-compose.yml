@@ -99,3 +99,31 @@ services:
       DB_USER: docapiuser
       DB_PASSWORD: DocApi@123
     restart: "no"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: docapinexus-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - api-gateway
+      - auth-service
+      - rest-api
+      - graphql-api
+      - audit-service
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: docapinexus-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
