@@ -94,3 +94,32 @@ jobs:
           format: table
           exit-code: 0
           severity: CRITICAL,HIGH
+
+   
+  kubernetes-security-scan:
+    name: Kubernetes YAML Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Kubernetes config scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: ./k8s
+          format: table
+          exit-code: 0
+          severity: CRITICAL,HIGH,MEDIUM
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov Kubernetes scan
+        run: checkov -d k8s --framework kubernetes --soft-fail
