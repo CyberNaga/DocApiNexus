@@ -54,3 +54,19 @@ services:
       - auth-service
       - rest-api
       - graphql-api
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    container_name: docapinexus-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:5000
+      REST_API_URL: http://rest-api:3000
+      GRAPHQL_API_URL: http://graphql-api:4000
+    depends_on:
+      - auth-service
+      - rest-api
+      - graphql-api

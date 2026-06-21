@@ -24,6 +24,7 @@ jobs:
           - backend/graphql-api
           - backend/microservices/auth-service
           - web-app
+          - backend/api-gateway
 
     steps:
       - name: Checkout source code
@@ -80,6 +81,10 @@ jobs:
             path: web-app
             image: docapinexus-web-app
 
+          - name: api-gateway
+            path: backend/api-gateway
+            image: docapinexus-api-gateway
+  
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
