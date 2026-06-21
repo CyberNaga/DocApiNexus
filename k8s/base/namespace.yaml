@@ -2,3 +2,11 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: docapinexus
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+
+    #baseline   = blocks clearly dangerous pod settings
+    #warn       = warns about stricter security issues
+    #audit      = records stricter security issues
