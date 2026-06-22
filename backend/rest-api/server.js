@@ -102,7 +102,17 @@ function authenticateToken(req, res, next) {
   });
 }
 
-app.get("/api/users", authenticateToken, async (req, res) => {
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      error: "Forbidden. Admin role required."
+    });
+  }
+
+  next();
+}
+
+app.get("/api/users", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
       "SELECT id, username, role, created_at FROM users ORDER BY id ASC"
