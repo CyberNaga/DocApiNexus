@@ -212,3 +212,98 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep-results.sarif
+
+  trivy-docker-sarif:
+    name: Trivy Docker SARIF Upload
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: rest-api
+            path: backend/rest-api
+            image: docapinexus-rest-api
+          - name: graphql-api
+            path: backend/graphql-api
+            image: docapinexus-graphql-api
+          - name: auth-service
+            path: backend/microservices/auth-service
+            image: docapinexus-auth-service
+          - name: audit-service
+            path: backend/microservices/audit-service
+            image: docapinexus-audit-service
+          - name: api-gateway
+            path: backend/api-gateway
+            image: docapinexus-api-gateway
+          - name: web-app
+            path: web-app
+            image: docapinexus-web-app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t ${{ matrix.image }}:ci ${{ matrix.path }}
+
+      - name: Run Trivy Docker image scan in SARIF format
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}:ci
+          format: sarif
+          output: trivy-${{ matrix.name }}.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: 0
+
+      - name: Upload Trivy SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.name }}-sarif
+          path: trivy-${{ matrix.name }}.sarif
+
+      - name: Upload Trivy results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.name }}.sarif
+          category: trivy-docker-${{ matrix.name }}
+
+  trivy-kubernetes-sarif:
+    name: Trivy Kubernetes SARIF Upload
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Kubernetes config scan in SARIF format
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: ./k8s
+          format: sarif
+          output: trivy-kubernetes.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: 0
+
+      - name: Upload Kubernetes Trivy SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-kubernetes-sarif
+          path: trivy-kubernetes.sarif
+
+      - name: Upload Kubernetes Trivy results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-kubernetes.sarif
+          category: trivy-kubernetes-config
