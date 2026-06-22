@@ -174,4 +174,31 @@ jobs:
         with:
           name: sbom-${{ matrix.name }}
           path: ${{ matrix.path }}/sbom-${{ matrix.name }}.json
-          
+
+  semgrep-sast:
+    name: Semgrep SAST Scan
+    runs-on: ubuntu-latest
+
+    container:
+      image: semgrep/semgrep:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST scan
+        run: |
+          semgrep scan \
+            --config p/ci \
+            --config p/owasp-top-ten \
+            --config p/javascript \
+            --config p/nodejs \
+            --sarif \
+            --output semgrep-results.sarif \
+            --no-error
+
+      - name: Upload Semgrep SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-sast-results
+          path: semgrep-results.sarif
