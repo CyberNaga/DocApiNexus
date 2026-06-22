@@ -90,6 +90,19 @@ app.post("/auth/register", async (req, res) => {
       });
     }
 
+    if (!isStrongPassword(password)) {
+  return res.status(400).json({
+    error: "Password does not meet complexity requirements",
+    requirements: [
+      "Minimum 8 characters",
+      "At least one uppercase letter",
+      "At least one lowercase letter",
+      "At least one number",
+      "At least one special character"
+    ]
+  });
+  } 
+
     const existingUser = await pool.query(
       "SELECT id FROM users WHERE username = $1",
       [username]
@@ -100,7 +113,16 @@ app.post("/auth/register", async (req, res) => {
         error: "User already exists"
       });
     }
+    
+    function isStrongPassword(password) {
+  const minLength = password.length >= 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
 
+  return minLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
+}
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await pool.query(
