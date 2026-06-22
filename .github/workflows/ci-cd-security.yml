@@ -394,3 +394,39 @@ jobs:
           cosign verify ghcr.io/cybernaga/${{ matrix.image }}@${{ steps.build.outputs.digest }} \
             --certificate-identity-regexp "https://github.com/${{ github.repository }}/.*" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+  api-security-tests:
+    name: Automated API Security Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Compose stack
+        run: |
+          docker compose up -d --build
+          sleep 30
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run Newman API2 security tests
+        run: |
+          npx newman run security-testing/api-pentest/postman/DocApiNexus_API2_Broken_Authentication.postman_collection.json \
+            -e security-testing/api-pentest/postman/DocApiNexus_Local.postman_environment.json \
+            --reporters cli,json \
+            --reporter-json-export api2-broken-authentication-report.json
+
+      - name: Upload Newman API security report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api2-broken-authentication-newman-report
+          path: api2-broken-authentication-report.json
+
+      - name: Stop Docker Compose stack
+        if: always()
+        run: docker compose down
