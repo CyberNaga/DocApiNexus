@@ -12,7 +12,10 @@
     "start:auth": "cd backend/microservices/auth-service && npm run dev",
     "start:web": "cd web-app && npm run dev",
     "start:all": "concurrently \"npm run start:rest\" \"npm run start:graphql\" \"npm run start:auth\" \"npm run start:web\"",
-    "db:migrate": "node database/migrate.js"
+    "db:migrate": "node database/migrate.js",
+    "test:api5": "node security-testing/api-pentest/automated-tests/api5-function-authorization-test.js",
+    "test:api2": "newman run security-testing/api-pentest/postman/DocApiNexus_API2_Broken_Authentication.postman_collection.json -e security-testing/api-pentest/postman/DocApiNexus_Local.postman_environment.json --reporters cli,json --reporter-json-export security-testing/api-pentest/automated-tests/newman-reports/api2-broken-authentication-report.json",
+    "test:api-security": "npm run test:api2 && npm run test:api5"
   },
   "repository": {
     "type": "git",
@@ -27,7 +30,8 @@
   },
   "homepage": "https://github.com/CyberNaga/DocApiNexus#readme",
   "devDependencies": {
-    "concurrently": "^10.0.3"
+    "concurrently": "^10.0.3",
+    "newman": "^6.2.2"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
