@@ -1,5 +1,7 @@
 name: Container Publish and Signing
-
+#Container images are published to GitHub Container Registry. 
+#Each image is signed using Cosign keyless signing through GitHub Actions OIDC. 
+#The signature is verified in the CI/CD workflow before the pipeline completes.
 on:
   push:
     branches:
