@@ -595,7 +595,7 @@ SELECT id, username, action, service, details, created_at FROM audit_logs;
 
 Start Minikube:
 
-```cmd..
+```cmd.
 minikube start --driver=docker
 ```
 
