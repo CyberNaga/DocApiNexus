@@ -1,0 +1,29 @@
+groups:
+  - name: docapinexus-service-alerts
+    rules:
+      - alert: DocApiNexusServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DocApiNexus service is down"
+          description: "Service {{ $labels.job }} is not reachable by Prometheus."
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.95, sum(rate(api_gateway_http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API Gateway high latency"
+          description: "API Gateway p95 latency is above 1 second."
+
+      - alert: HighRequestErrorRate
+        expr: sum(rate(api_gateway_http_request_duration_seconds_count{status_code=~"5.."}[5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API Gateway 5xx errors detected"
+          description: "API Gateway is returning 5xx errors."
