@@ -133,3 +133,45 @@ jobs:
 
       - name: Run Checkov Kubernetes scan
         run: checkov -d k8s --framework kubernetes --soft-fail
+  sbom-generation:
+    name: Generate CycloneDX SBOM
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: rest-api
+            path: backend/rest-api
+          - name: graphql-api
+            path: backend/graphql-api
+          - name: auth-service
+            path: backend/microservices/auth-service
+          - name: audit-service
+            path: backend/microservices/audit-service
+          - name: api-gateway
+            path: backend/api-gateway
+          - name: web-app
+            path: web-app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generate CycloneDX SBOM
+        working-directory: ${{ matrix.path }}
+        run: |
+          npm install
+          npx @cyclonedx/cyclonedx-npm --output-reproducible --output-format JSON --output-file sbom-${{ matrix.name }}.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.name }}
+          path: ${{ matrix.path }}/sbom-${{ matrix.name }}.json
+          
