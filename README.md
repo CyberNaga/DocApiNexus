@@ -576,13 +576,13 @@ curl http://localhost:6000/metrics
 ### Register User
 
 ```cmd
-curl.exe -X POST http://localhost:8080/auth/register -H "Content-Type: application/json" -d "{\"username\":\"demo\",\"password\":\"Test@12345\"}"
+curl.exe -X POST http://localhost:8080/auth/register -H "Content-Type: application/json" -d "{\"username\":\"demo\",\"password\":\"*******\"}"
 ```
 
 ### Login User
 
 ```cmd
-curl.exe -X POST http://localhost:8080/auth/login -H "Content-Type: application/json" -d "{\"username\":\"demo\",\"password\":\"Test@12345\"}"
+curl.exe -X POST http://localhost:8080/auth/login -H "Content-Type: application/json" -d "{\"username\":\"demo\",\"password\":\"*******\"}"
 ```
 
 ### Call Protected REST API
