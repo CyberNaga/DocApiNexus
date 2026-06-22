@@ -571,46 +571,6 @@ curl http://localhost:6000/metrics
 
 ---
 
-## Example API Testing
-
-### Register User
-
-```cmd
-curl.exe -X POST http://localhost:8080/auth/register -H "Content-Type: application/json" -d "{\"username\":\"demo\",\"password\":\"*******\"}"
-```
-
-### Login User
-
-```cmd
-curl.exe -X POST http://localhost:8080/auth/login -H "Content-Type: application/json" -d "{\"username\":\"demo\",\"password\":\"*******\"}"
-```
-
-### Call Protected REST API
-
-```cmd
-curl http://localhost:8080/api/users -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-### Call GraphQL API
-
-```cmd
-curl.exe -X POST http://localhost:8080/graphql -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_TOKEN" -d "{\"query\":\"{ profile }\"}"
-```
-
-### Create Audit Log
-
-```cmd
-curl.exe -X POST http://localhost:8080/audit/log -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_TOKEN" -d "{\"action\":\"README_TEST\",\"service\":\"api-gateway\",\"details\":{\"source\":\"manual test\"}}"
-```
-
-### View Audit Logs
-
-```cmd
-curl http://localhost:8080/audit/logs -H "Authorization: Bearer YOUR_TOKEN"
-```
-
----
-
 ## PostgreSQL Verification
 
 Enter PostgreSQL container:
