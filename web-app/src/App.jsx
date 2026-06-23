@@ -1,142 +1,176 @@
 import { useState } from "react";
-import axios from "axios";
 import "./App.css";
-
-function App() {
-  const [username, setUsername] = useState("dheena");
-  const [password, setPassword] = useState("Test@12345");
-  const [token, setToken] = useState("");
-  const [message, setMessage] = useState("");
-  const [restData, setRestData] = useState(null);
-  const [graphqlData, setGraphqlData] = useState(null);
 
 const gatewayBaseUrl = "http://localhost:8080";
 
-const authBaseUrl = gatewayBaseUrl;
-const restBaseUrl = gatewayBaseUrl;
-const graphqlUrl = `${gatewayBaseUrl}/graphql`;
+function App() {
+  const [username, setUsername] = useState("normaluser_auto");
+  const [password, setPassword] = useState("Strong@12345");
+  const [token, setToken] = useState("");
+  const [loginMessage, setLoginMessage] = useState("Not logged in");
 
-  async function registerUser() {
+  const [restResponse, setRestResponse] = useState("REST API response will appear here.");
+  const [graphqlResponse, setGraphqlResponse] = useState("GraphQL API response will appear here.");
+
+  const formatJson = (data) => {
     try {
-      const response = await axios.post(`${authBaseUrl}/auth/register`, {
-        username,
-        password,
-        role: "ADMIN"
+      return JSON.stringify(data, null, 2);
+    } catch {
+      return String(data);
+    }
+  };
+
+  const registerUser = async () => {
+    try {
+      const response = await fetch(`${gatewayBaseUrl}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username, password })
       });
 
-      setMessage(JSON.stringify(response.data, null, 2));
+      const data = await response.json();
+      setLoginMessage(`Register: ${response.status} - ${data.message || data.error || "Completed"}`);
     } catch (error) {
-      setMessage(JSON.stringify(error.response?.data || error.message, null, 2));
+      setLoginMessage(`Register failed: ${error.message}`);
     }
-  }
+  };
 
-  async function loginUser() {
+  const loginUser = async () => {
     try {
-      const response = await axios.post(`${authBaseUrl}/auth/login`, {
-        username,
-        password
+      const response = await fetch(`${gatewayBaseUrl}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username, password })
       });
 
-      setToken(response.data.accessToken);
-      setMessage("Login successful. JWT token saved in frontend state.");
-    } catch (error) {
-      setMessage(JSON.stringify(error.response?.data || error.message, null, 2));
-    }
-  }
+      const data = await response.json();
+      const jwt = data.token || data.accessToken || data.jwt;
 
-  async function callProtectedRestApi() {
+      if (response.ok && jwt) {
+        setToken(jwt);
+        setLoginMessage(`Logged in as ${username}`);
+      } else {
+        setLoginMessage(data.error || "Login failed");
+      }
+    } catch (error) {
+      setLoginMessage(`Login failed: ${error.message}`);
+    }
+  };
+
+  const callRestApi = async () => {
     try {
-      const response = await axios.get(`${restBaseUrl}/api/users`, {
+      const response = await fetch(`${gatewayBaseUrl}/api/users`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
-      setRestData(response.data);
+      const data = await response.json();
+      setRestResponse(formatJson(data));
     } catch (error) {
-      setRestData(error.response?.data || error.message);
+      setRestResponse(`REST API failed: ${error.message}`);
     }
-  }
+  };
 
-  async function callProtectedGraphqlApi() {
+  const callGraphqlApi = async () => {
     try {
-      const response = await axios.post(
-        graphqlUrl,
-        {
-          query: `
-            {
-              profile
-            }
-          `
+      const response = await fetch(`${gatewayBaseUrl}/graphql`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+        body: JSON.stringify({
+          query: "{ profile }"
+        })
+      });
 
-      setGraphqlData(response.data);
+      const data = await response.json();
+      setGraphqlResponse(formatJson(data));
     } catch (error) {
-      setGraphqlData(error.response?.data || error.message);
+      setGraphqlResponse(`GraphQL API failed: ${error.message}`);
     }
-  }
+  };
 
   return (
-    <div className="container">
-      <h1>DocApiNexus Web App</h1>
-      <p>React frontend connected to Auth, REST, and GraphQL services.</p>
+    <main className="app-shell">
+      <section className="hero">
+        <div className="badge">API Security · Microservices · DevSecOps</div>
+        <h1>DocApiNexus</h1>
+        <p>
+          A local API security lab for REST, GraphQL, JWT authentication,
+          microservices, Docker, Kubernetes, CI/CD security, and observability.
+        </p>
+      </section>
 
-      <div className="card">
-        <h2>Login/Register</h2>
+      <section className="login-card">
+        <div className="login-header">
+          <h2>Project Login Console</h2>
+          <p>Authenticate through the API Gateway and test secured APIs.</p>
+        </div>
 
-        <label>Username</label>
-        <input
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
-        />
+        <div className="login-grid">
+          <div className="field-group">
+            <label>Username</label>
+            <input
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="Enter username"
+            />
+          </div>
 
-        <label>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
+          <div className="field-group">
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter password"
+            />
+          </div>
+        </div>
 
         <div className="button-row">
-          <button onClick={registerUser}>Register</button>
-          <button onClick={loginUser}>Login</button>
+          <button className="secondary-button" onClick={registerUser}>
+            Register
+          </button>
+          <button className="primary-button" onClick={loginUser}>
+            Login
+          </button>
         </div>
-      </div>
 
-      <div className="card">
-        <h2>JWT Token</h2>
-        <textarea value={token} readOnly rows="5" />
-      </div>
-
-      <div className="card">
-        <h2>API Tests</h2>
-        <div className="button-row">
-          <button onClick={callProtectedRestApi}>Call Protected REST API</button>
-          <button onClick={callProtectedGraphqlApi}>Call Protected GraphQL API</button>
+        <div className={token ? "status-box success" : "status-box"}>
+          {loginMessage}
         </div>
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Message</h2>
-        <pre>{message}</pre>
-      </div>
+      <section className="api-actions">
+        <button onClick={callRestApi}>Call REST API</button>
+        <button onClick={callGraphqlApi}>Call GraphQL API</button>
+      </section>
 
-      <div className="card">
-        <h2>REST API Response</h2>
-        <pre>{JSON.stringify(restData, null, 2)}</pre>
-      </div>
+      <section className="response-grid">
+        <div className="response-card">
+          <div className="response-title">
+            <span>REST API</span>
+            <small>/api/users</small>
+          </div>
+          <pre>{restResponse}</pre>
+        </div>
 
-      <div className="card">
-        <h2>GraphQL API Response</h2>
-        <pre>{JSON.stringify(graphqlData, null, 2)}</pre>
-      </div>
-    </div>
+        <div className="response-card">
+          <div className="response-title">
+            <span>GraphQL API</span>
+            <small>/graphql</small>
+          </div>
+          <pre>{graphqlResponse}</pre>
+        </div>
+      </section>
+    </main>
   );
 }
 
