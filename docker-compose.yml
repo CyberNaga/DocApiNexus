@@ -1,4 +1,44 @@
+name: docapinexus
+
 services:
+  postgres:
+    image: postgres:16
+    container_name: docapinexus-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: docapinexusdb
+      POSTGRES_USER: docapiuser
+      POSTGRES_PASSWORD: DocApi@123
+    volumes:
+      - docapinexus-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docapiuser -d docapinexusdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
+
+  db-migration:
+    build:
+      context: .
+      dockerfile: database/Dockerfile
+    container_name: docapinexus-db-migration
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: docapinexusdb
+      DB_USER: docapiuser
+      DB_PASSWORD: DocApi@123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - docapinexus-network
+
   auth-service:
     build:
       context: ./backend/microservices/auth-service
@@ -9,11 +49,17 @@ services:
       PORT: 5000
       JWT_SECRET: docapinexus_local_secret_change_later
       JWT_EXPIRES_IN: 1h
-      DB_HOST: host.docker.internal
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: docapinexusdb
       DB_USER: docapiuser
       DB_PASSWORD: DocApi@123
+    depends_on:
+      db-migration:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
 
   rest-api:
     build:
@@ -24,13 +70,17 @@ services:
     environment:
       PORT: 3000
       JWT_SECRET: docapinexus_local_secret_change_later
-      DB_HOST: host.docker.internal
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: docapinexusdb
       DB_USER: docapiuser
       DB_PASSWORD: DocApi@123
     depends_on:
-      - auth-service
+      db-migration:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
 
   graphql-api:
     build:
@@ -42,18 +92,32 @@ services:
       PORT: 4000
       JWT_SECRET: docapinexus_local_secret_change_later
     depends_on:
-      - auth-service
+      auth-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
 
-  web-app:
+  audit-service:
     build:
-      context: ./web-app
-    container_name: docapinexus-web-app
+      context: ./backend/microservices/audit-service
+    container_name: docapinexus-audit-service
     ports:
-      - "5173:5173"
+      - "6000:6000"
+    environment:
+      PORT: 6000
+      JWT_SECRET: docapinexus_local_secret_change_later
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: docapinexusdb
+      DB_USER: docapiuser
+      DB_PASSWORD: DocApi@123
     depends_on:
-      - auth-service
-      - rest-api
-      - graphql-api
+      db-migration:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
 
   api-gateway:
     build:
@@ -68,37 +132,30 @@ services:
       GRAPHQL_API_URL: http://graphql-api:4000
       AUDIT_SERVICE_URL: http://audit-service:6000
     depends_on:
-      - auth-service
-      - rest-api
-      - graphql-api
+      auth-service:
+        condition: service_started
+      rest-api:
+        condition: service_started
+      graphql-api:
+        condition: service_started
+      audit-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
 
-  audit-service:
+  web-app:
     build:
-      context: ./backend/microservices/audit-service
-    container_name: docapinexus-audit-service
+      context: ./web-app
+    container_name: docapinexus-web-app
     ports:
-      - "6000:6000"
-    environment:
-      PORT: 6000
-      JWT_SECRET: docapinexus_local_secret_change_later
-      DB_HOST: host.docker.internal
-      DB_PORT: 5432
-      DB_NAME: docapinexusdb
-      DB_USER: docapiuser
-      DB_PASSWORD: DocApi@123
-
-  db-migration:
-    build:
-      context: .
-      dockerfile: database/Dockerfile
-    container_name: docapinexus-db-migration
-    environment:
-      DB_HOST: host.docker.internal
-      DB_PORT: 5432
-      DB_NAME: docapinexusdb
-      DB_USER: docapiuser
-      DB_PASSWORD: DocApi@123
-    restart: "no"
+      - "5173:5173"
+    depends_on:
+      api-gateway:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
 
   prometheus:
     image: prom/prometheus:latest
@@ -107,13 +164,21 @@ services:
       - "9090:9090"
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+      - ./observability/prometheus/alerts.yaml:/etc/prometheus/alerts.yaml
     depends_on:
-      - api-gateway
-      - auth-service
-      - rest-api
-      - graphql-api
-      - audit-service
+      api-gateway:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      rest-api:
+        condition: service_started
+      graphql-api:
+        condition: service_started
+      audit-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
 
   grafana:
     image: grafana/grafana:latest
@@ -126,5 +191,18 @@ services:
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
+      - docapinexus-grafana-data:/var/lib/grafana
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - docapinexus-network
+
+networks:
+  docapinexus-network:
+    driver: bridge
+
+volumes:
+  docapinexus-postgres-data:
+  docapinexus-grafana-data:

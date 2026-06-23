@@ -47,7 +47,6 @@ The project acts as a practical learning lab for:
 * DevSecOps pipeline security
 * Kubernetes deployment
 * Observability engineering
-* Portfolio and interview preparation
 
 ---
 
