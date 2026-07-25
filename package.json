@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/CyberNaga/DocApiNexus#readme",
   "devDependencies": {
-    "concurrently": "^10.0.3",
+    "concurrently": "^10.0.4",
     "newman": "^6.2.2"
   },
   "dependencies": {
